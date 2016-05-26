@@ -1,0 +1,14 @@
+php:
+- '(echo)\s+?(\$_POST\[?.+?\]+?|\$_GET\[?.+?\]+?|\$_REQUEST\[?.+?\]+?)'
+#- '(<\?=)(\$_POST\[?.+?\]+?|\$_GET\[?.+?\]+?|\$_REQUEST\[?.+?\]+?)\?>'
+#- '(<\?=)(\$_POST\[?.+?\]?|\$_GET\[?.+?\]?|\$_REQUEST\[?.+?\]?)\?>'
+#jsp:
+# - "(out\.println)\s?\((request\.getParameter\(.*\))\)"
+# - "(out\.println)\s?(request\.getParameter\(.*\))"
+#asp:
+# - "(response\.write)\((Request\.QueryString\((.*)\))\)"
+# - "(response\.write)\s+?(Request\.QueryString\((.*)\))"
+# - "(Response\.Write)\s+?.+?(Request.Form\(.*\))"
+#java:
+# - "(out\.println)\s?\((request\.getParameter\(.*\))\)"
+# - "(out\.println)\s?(request\.getParameter\(.*\))"

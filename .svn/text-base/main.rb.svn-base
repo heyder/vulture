@@ -1,0 +1,122 @@
+#!/usr/bin/env ruby
+#
+#
+#
+
+DEBUG = false
+RootInstall = File.expand_path(File.dirname(__FILE__))
+
+require 'optparse'
+require RootInstall+'/lib/util'
+require RootInstall+'/lib/output'
+require RootInstall+'/lib/scan'
+
+options = {
+  :lang => nil,
+  :rot => nil,
+  :url => nil,
+  :dir => nil,
+  :verbose => false,
+  :out => nil,
+  :proxy_addr => "127.0.0.1",
+  :proxy_port => 8080,
+  :use_proxy  => true
+}
+
+OptionParser.new do |opts|
+  begin
+    opts.banner = "Usage: main.rb -l LANG -d DIR"
+    opts.on("-l", "--lang LANG", "Language files") do |l|
+      options[:lang] = l
+    end
+    opts.on("-c", "--check VULN", "Check for ? e.g.: xss [default: all]") do |c|
+      options[:rot] = c
+    end
+    opts.on("-u", "--url URL", "Test vulnerable parameters in the application running") do |c|
+      options[:url] = c
+    end
+    opts.on("-d", "--directory DIR", "Directory from the source files") do |d|
+      options[:dir] = d
+    end
+    opts.on("-v", "--verbose", "Verbose output") do |v|
+      options[:verbose] = true
+    end
+    opts.on("-o", "--output OUTPUT", "Specify the output file") do |o|
+      options[:out] = o
+    end
+    opts.parse!
+    if (options[:lang].nil? or options[:dir].nil?)
+      msg = 'language and directory are required'
+      Msg.new().erro(msg)
+    end
+  rescue ::Exception => e
+    Msg.new().erro(e)
+  end
+end
+
+puts options.inspect if DEBUG
+
+VERBOSE = options[:verbose]
+  
+def run(pFiles,check)
+
+  msg = Msg.new()
+
+  check.patterns = nil
+  
+  check.patterns = GetPatterns(check.rot,check.lang)
+
+  pFiles.each do |file|
+    check.file = file
+  	check.vars = getParms(file,check.lang)
+	  founds,outFile = check.scan()
+
+    unless (founds.nil?)
+      msg.found(check.rot,founds,check.out)
+    end
+
+    check.vars = nil
+    check.file = nil
+
+  end
+
+end
+
+
+def main(options)
+
+  msg = Msg.new()
+  check = RotScanner.new(options[:rot])
+  check.lang = options[:lang]
+  check.url = options[:url]
+  check.proxy_addr = options[:proxy_addr]
+  check.proxy_port = options[:proxy_port]
+  check.use_proxy = options[:use_proxy]
+
+  puts check.inspect if DEBUG
+  
+  vFiles = getFiles(options[:dir],check.lang)
+	  
+  if (vFiles.nil?)
+   	s = "no files \"#{check.lang}\" founds"
+   	msg.erro(s)
+    return
+  end 
+
+  if (options[:out])
+    check.out = File.expand_path(options[:out])
+    msg.info("The output file will be saved in #{check.out}")
+  end
+
+  if (check.rot.nil?)
+    VALID_ROTS.each do |rot|
+	    check.rot = rot
+      run(vFiles,check)
+    end
+  else
+    run(vFiles,check)
+  end
+  
+end
+
+main(options)

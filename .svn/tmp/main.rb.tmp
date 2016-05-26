@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+#
+#
+#
+require 'optparse'
+require 'lib/util'
+require 'lib/output'
+
+parm = {:lang=>nil,:rot=>'all',:dir=>nil,:verbose=>false}
+OptionParser.new do |opts|
+  opts.version = "0.01"
+<<<<<<< .mine
+  opts.on("-l", "--lang", "Language files") do |l| 
+=======
+  opts.on("-l", "--lang", "Language files") do |l|
+    options[:lang] = l
+>>>>>>> .r3
+    parm[:lang] = ARGV[0]
+<<<<<<< .mine
+  end 
+  opts.on("-c", "--check", "Check for? e.g.: xss [default: all]") do |r| 
+    parm[:rot] = ARGV[0]
+=======
+  end
+  opts.on("-c", "--check", "Check for? e.g.: xss [default: all]") do |c|
+    options[:check] = c
+    parm[:check] = ARGV[0]
+>>>>>>> .r3
+  end
+  opts.on("-d", "--directory", "Directory from the source files") do |d|
+    parm[:dir] = ARGV[0]
+  end
+  opts.on("-v", "--verbose", "Verbose output") do |v|
+    parm[:verbose] = true
+  end
+  opts.on("-o", "--output", "Specify the output file") do |o|
+    options[:out] = o
+    parm[:out] = ARGV[0]
+  end
+  opts.parse!
+  Raise OptionParser::MissingArgument, OptionParser::InvalidOption if ((parm[:lang].nil?) or (parm[:dir].nil?))
+end
+
+vLang = parm[:lang]
+vDir = parm[:dir]
+vRot = parm[:rot]
+vOut = parm[:out] if (options[:out])
+
+VERBOSE = parm[:verbose]
+
+<<<<<<< .mine
+def main(pDir,pLang,pRot)
+=======
+def main(pDir,pLang, pOut)
+>>>>>>> .r3
+  vFiles = getFiles(pDir,pLang)
+  if (vFiles.nil?)
+      msg = "No files \"#{pLang}\" founds"
+      return Msg.new(msg)
+  else
+    vFiles.each do |file|
+<<<<<<< .mine
+      case (pRot)
+      when 'xss'
+        # Check for XSS vulnerabilities 
+        require 'rotscan/xss'
+        checkForXSS(file,GetPatterns('xss',pLang))
+      when 'sqli'
+        # Check for SQLI vulnerabilities 
+        require 'rotscan/sqli'
+        checkForSqli(file,GetPatterns('sqli',pLang))
+      when 'all'
+        require 'rotscan/xss'
+        require 'rotscan/sqli'
+        checkForXSS(file,GetPatterns('xss',pLang))
+        checkForSqli(file,GetPatterns('sqli',pLang))
+       else
+         return Msg.new().erro("No rotscan found")
+      end
+=======
+      # Check for XSS vulnerabilities
+      checkForXSS(file,pLang,pOut)
+>>>>>>> .r3
+    end
+  end
+end
+
+<<<<<<< .mine
+main(vDir,vLang,vRot)
+=======
+main(vDir,vLang,vOut)
+>>>>>>> .r3
+
