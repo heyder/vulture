@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Vulture
 ==
 The Vulture Framework is released under a GPL v3 license. See
@@ -16,3 +17,9 @@ pull request. For slightly more information, see
 
 
 [wiki]: https://github.com/heyder/Vulture/wiki
+=======
+vulture
+=======
+
+Static Source Code Analysis Tool
+>>>>>>> 9161e76883521053e98416e7af03dd62198b54df
