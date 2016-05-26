@@ -1,8 +1,0 @@
-xss:
- - "payloads/xss.txt"
-sqli:
- - "xxx"
-cmdexec:
- - "xxx"
-rfi:
- - "xxx"

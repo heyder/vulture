@@ -1,8 +1,0 @@
-php:
- - '(\s?INSERT\s|\s?EXEC\s|\s?UPDATE\s|\s?SELECT\s|\s?WHERE\s).*?(\$_POST\[?.+?\]+?|\$_GET\[?.+?\]+?|\$_REQUEST\[?.+?\]+?)'
-jsp:
- - '(\s?select\s?).*?(request\.getParameter\(.*?\))'
-asp:
- - '(\s?select\s?)\s?.+\s?(req\.getParameter\(.*?\))'
-java:
- - '(\s?select\s?).*?(request\.getParameter\(.*?\))'

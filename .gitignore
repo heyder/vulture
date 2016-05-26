@@ -1,6 +1,4 @@
-<<<<<<< HEAD
-config/old/
-=======
+signatures/old/
 *.gem
 *.rbc
 .bundle
@@ -19,4 +17,3 @@ tmp
 .yardoc
 _yardoc
 doc/
->>>>>>> 9161e76883521053e98416e7af03dd62198b54df
