@@ -1,6 +1,6 @@
 Vulture
 ==
-Static Source Code Analysis Tool
+Static source code analysis tool using regular expression signatures.
 
 The Vulture Framework is released under a GPL v3 license. See
 COPYING for more details.
