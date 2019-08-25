@@ -1,0 +1,19 @@
+php:
+ - '(exec)\s?\([.+]?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\])[.+]?\)'
+ - '(shell_exec)\s?\([.+]?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\])[.+]?\)'
+ - '(popen)\s?\([.+]?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\])[.+]?\)'
+ - '(eval)\s?.+?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\]).+?'
+ - '(passthru)\s?\([.+]?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\])[.+]?\)'
+ - '(system)\s?\([.+]?(\$_GET\[.*\]|\$_POST\[.*\]|\$_REQUEST\[.*\])[.+]?\)'
+#- Macro regexs
+ - '(system)\s?\.+?\b(MARK)\b.+?'
+ - '(passthru)\s?.+?\b(MARK)\b.+?'
+ - '(exec)\s?.+?\b(MARK)\b.+?'
+ - '(shell_exec)\s?.+?\b(MARK)\b.+?'
+ - '(popen)\s?.+?\b(MARK)\b.+?'
+ - '(eval)\s?.+?\b(MARK)\b?.+?'
+
+jsp:
+ - '(\.exec)\((request\.getParameter\(.*?\))\)' 
+asp:
+- '(Runtime\.getRuntime\(\)\.exec)\((.*)\)'

@@ -1,0 +1,1 @@
+include($dir . "/function.php");
