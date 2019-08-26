@@ -13,12 +13,12 @@ describe Vulture::Util do
         end
         it 'invalid language' do
             file = File.expand_path(__FILE__)
-            expect{ @vulture.get_manipulable_inputs( file, 'noexist_lang' ) }.to raise_error(RuntimeError)
+            expect{ @vulture.get_manipulable_inputs(file, 'noexist_lang') }.to raise_error(RuntimeError)
         end
 
         it 'all is good' do
             file = "#{Vulture::RootInstall}/../examples/files_test/sqli.php"
-            vars = @vulture.get_manipulable_inputs( file, 'php' )
+            vars = @vulture.get_manipulable_inputs(file, 'php')
             expect(vars).not_to be(nil)
             expect(vars).not_to be_empty
         end
@@ -27,13 +27,13 @@ describe Vulture::Util do
 
     context '.get_patterns' do
         it 'invalid category' do
-            expect{@vulture.get_patterns( 'invalid', 'php' )}.to raise_error(RuntimeError)
+            expect{@vulture.get_patterns('invalid', 'php')}.to raise_error(RuntimeError)
         end
         it 'invalid language' do
-            expect{@vulture.get_patterns( 'rce', 'noexist' )}.to raise_error(RuntimeError)
+            expect{@vulture.get_patterns('rce', 'noexist')}.to raise_error(RuntimeError)
         end
         it 'all is good' do
-            patterns = @vulture.get_patterns( 'rce', 'php' )
+            patterns = @vulture.get_patterns('rce', 'php')
             expect(patterns).not_to be(nil)
             expect(patterns).to be_an_instance_of(Array)
         end
@@ -42,11 +42,11 @@ describe Vulture::Util do
 
     context '.generate_dynamic_patterns' do
         it 'all good' do
-            patterns = @vulture.get_patterns( 'rce', 'php' )
+            patterns = @vulture.get_patterns('rce', 'php')
             file = "#{Vulture::RootInstall}/../examples/files_test/cmd.php"
-            vars = @vulture.get_manipulable_inputs( file, 'php' )
+            vars = @vulture.get_manipulable_inputs(file, 'php')
             
-            regexs = @vulture.generate_dynamic_patterns( patterns, vars )
+            regexs = @vulture.generate_dynamic_patterns(patterns, vars)
             
             expect(regexs).not_to be(nil)
             expect(regexs).not_to be_empty

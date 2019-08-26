@@ -4,12 +4,12 @@ module Vulture::Util
   # @param [String] in_file File path to be analized.
   # @param [String] lang The The program language of the file.
   # @return [Array, nil] Array for user's input variables.
-  def get_manipulable_inputs ( in_file, lang ) 
+  def get_manipulable_inputs (in_file, lang) 
     begin
       source_code_fd = File.open(in_file)
       tracker = YAML::load_file(Vulture::RootInstall+"/signatures/input_tracker.yml")[lang]
       raise RuntimeError.new("unable to find input tracker for #{lang}") if tracker.nil?
-      #Msg.new().debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}" )
+      #Msg.new().debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
       vars = []
       source_code_fd.each do |line|
         tracker.each do | pattern|
@@ -47,7 +47,7 @@ module Vulture::Util
         return pattern
       end
     else
-      raise  RuntimeError.new( "file #{yml} not found!" )
+      raise  RuntimeError.new("file #{yml} not found!")
     end
     rescue Exception => e
       # Msg.new.erro(e)
@@ -112,16 +112,16 @@ module Vulture::Util
         ret << p.gsub($1,nVars.uniq.join())
         pattern, replaced = splitbracket("#{pattern}")
         case (replaced)
-          when 1
-            ret << "#{pattern})\\)" # add ')/)'
-          when 2
-            ret << "#{pattern})\\)?" # ')/)?'
-          when 3
-            ret << "#{pattern}\\)" # /)
-          when 4
-            ret << "#{pattern})" # )
-          else
-            ret << "#{pattern}"
+        when 1
+          ret << "#{pattern})\\)" # add ')/)'
+        when 2
+          ret << "#{pattern})\\)?" # ')/)?'
+        when 3
+          ret << "#{pattern}\\)" # /)
+        when 4
+          ret << "#{pattern})" #)
+        else
+          ret << "#{pattern}"
         end
     end
   
@@ -131,43 +131,42 @@ module Vulture::Util
   end
 
 
+  # Get files in a directory by extension
+  # @param [String] dir Directory of the project to be analized.
+  # @patam [String] lang  The program language of the project.
+  # @return [Array] List of files.
+  def get_files(dir,lang)
 
+    begin
+      # msg = Msg.new()
+      if ((lang.nil?) or (lang.empty?) or (lang == ''))
+        return nil
+      elsif
+        ((dir.nil?) or (dir.empty?) or (dir == ''))
+        return nil
+      end
+      unless (File::directory?(dir))
+        raise RuntimeError.new("is not a valid directory")
+        # msg.erro(s)
+        # return nil
+      end
 
-  # Get Files in a directory by extension
-  # input: directory,language - e.g: ("/tmp/","php")
-  # return: Array of files
-  # def getFiles(pDir,pLang)
+      ext = ".#{lang}"
+      #libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
+      libfiles = File.join(dir, "**", "*#{ext}")
+      # Vulture::Output.debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
 
-  #   begin
-  #     msg = Msg.new()
-  #     if ((pLang.nil?) or (pLang.empty?) or (pLang == ''))
-  #       return nil
-  #     elsif
-  #       ((pDir.nil?) or (pDir.empty?) or (pDir == ''))
-  #       return nil
-  #     end
-  #     unless (File::directory?(pDir))
-  #       s = "is not a valid directory"
-  #       msg.erro(s)
-  #       return nil
-  #     end
+      files = Dir.glob(libfiles)
+      if (files.nil? or files.empty?)
+        raise "no files \"#{lang}\" founds"
+        #return nil
+      else
+        return files.uniq
+      end
+    rescue Exception => e
+      raise e.message
+    end
 
-  #     ext = ".#{pLang}"
-  #     #libfiles = File.join(File.expand_path(pDir), "**", "*#{ext}")
-  #     libfiles = File.join(pDir, "**", "*#{ext}")
-  #     msg.debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
-
-  #     files = Dir.glob(libfiles)
-  #     if (files.nil? or files.empty?)
-  #       raise "no files \"#{pLang}\" founds"
-  #       #return nil
-  #     else
-  #       return files.uniq
-  #     end
-  #   rescue Exception => e
-  #     msg.erro(e)
-  #   end
-
-  # end
+  end
 
 end

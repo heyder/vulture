@@ -7,10 +7,10 @@ describe Vulture do
 
   context 'initialize' do
     it 'instance variable' do
-      expect( Vulture.new ).to be_instance_of(Vulture)
+      expect(Vulture.new).to be_instance_of(Vulture)
     end
     it 'invalid scan type should raise an exception' do
-      expect{ Vulture.new( {:rot => 'invalid' } ) }.to raise_error(RuntimeError)
+      expect{ Vulture.new({:rot => 'invalid' }) }.to raise_error(RuntimeError)
     end
   end
 
@@ -21,11 +21,11 @@ describe Vulture do
           :rot => 'rce',
           :lang => 'php',
       })
-      vulture.patterns = vulture.get_patterns( 'rce', 'php' )
+      vulture.patterns = vulture.get_patterns('rce', 'php')
       vulture.file = "#{Vulture::RootInstall}/../examples/files_test/cmd.php"
-      vars = vulture.get_manipulable_inputs( vulture.file, 'php' )
+      vars = vulture.get_manipulable_inputs(vulture.file, 'php')
 
-      vulture.patterns = vulture.generate_dynamic_patterns( vulture.patterns, vars )
+      vulture.patterns = vulture.generate_dynamic_patterns(vulture.patterns, vars)
       result = vulture.to_analyze()
       expect(result).not_to be(nil)
       expect(result).to be_an_instance_of(Array)
