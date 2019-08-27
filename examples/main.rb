@@ -34,7 +34,7 @@ OptionParser.new do |opts|
     opts.on("-v", "--verbose", "Verbose output") do |e|
       options[:verbose] = true
     end
-    opts.on("-d", "--debug", "Running in debug mode") do |r|
+    opts.on("-d", "--print_debug", "Running in print_debug mode") do |r|
       options[:debug] = true
     end
     opts.parse!
@@ -47,29 +47,29 @@ OptionParser.new do |opts|
   end
 end
 #
+puts options.inspect
 
-v = [:debug, :verbose].inject({}) {|h,k| h[k] = options.delete(k) if options.key?(k);h}
-
-DEBUG   ||= v[:debug]
-VERBOSE ||= v[:verbose]
-#  
 def main(options)
 
-  vulture       = Vulture.new(options)
+  vulture = Vulture.new(options)
 
-  vulture.debug("::#{__method__}::MSG::Vulture#{vulture.inspect}")
+  # binding.pry
+
+  # vulture.print_debug("::#{__method__}::MSG::Vulture#{vulture.inspect}")
   #TODO - file_path_validator
-  vulture.info("The report file will be saved in #{vulture.outfile}") if vulture.outfile
+  vulture.print_info("The report file will be saved in #{vulture.outfile}") if vulture.outfile
   
   vFiles = vulture.get_files(vulture.dir,vulture.lang)
 
-  vulture.debug("::#{__method__}::MSG::Obj::#{vFiles.inspect}")
+  vulture.print_debug("::#{__method__}::vulture::files::#{vFiles.length}")
 	  
   vFiles.each do |file|
-    inputs = vulture.get_manipulable_inputs(file,vulture.lang)
+    fd = File.readlines(file)
+    inputs = vulture.get_manipulable_inputs(fd)
     vulture.vars = vulture.vars | inputs unless inputs.nil?
+    fd = nil
   end
-  vulture.debug("::#{__method__}::MSG::Vulture:vars#{vulture.vars}")
+  vulture.print_verbose("::#{__method__}::vulture::inputs::#{vulture.vars}")
   
 
   if (vulture.rot.nil?)
@@ -85,7 +85,7 @@ def main(options)
 end
 #
 def run(pFiles,vulture)
-  # msg               = vulture.new()
+  
   vulture.patterns  = vulture.get_patterns(vulture.rot,vulture.lang) # get regex for vulnerability category
   if (vulture.rot != 'misc')
     unless (vulture.vars.empty?)
@@ -94,10 +94,10 @@ def run(pFiles,vulture)
       vulture.patterns = vulture.generate_dynamic_patterns(vulture.patterns, vulture.vars)  # anexa a os inputs manipulavei nos padros pre estabelecido
     end 
   end
-  vulture.debug("::RotScanner::#{__method__}::MSG::[@patterns]\t#{vulture.patterns.inspect}")
+  vulture.print_debug("::#{__method__}::MSG::[@patterns]\t#{vulture.patterns.inspect}")
 
   pFiles.each do |file|
-
+    vulture.print_verbose("analyzing...\s#{file}\sagainst\s\"#{vulture.rot}\"\spatterns")
     vulture.file  = file
 	  founds        = vulture.to_analyze()
     #unless (founds.nil?)

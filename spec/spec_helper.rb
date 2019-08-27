@@ -1,5 +1,5 @@
-require "bundler/setup"
-require "vulture"
+# require "bundler/setup"
+require_relative "../lib/vulture"
 # require 'simplecov'
 # # require 'regexp-examples'
 # # SimpleCov.start

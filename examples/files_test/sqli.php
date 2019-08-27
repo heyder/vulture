@@ -2,6 +2,8 @@
 $minha_var = $_REQUEST['m']
 
 
+/* "SELECT"  from . $wpdb->prefix ."bannerize_b WHERE id = " . $_POST["id"]; */ FALSE POSITIVE it is a comment
+
 
 $sql = "UPDATE" . $wpdb->prefix ."bannerize_b SET clickcount = clickcount+1 WHERE id = " . $_POST["id"];
 

@@ -10,27 +10,32 @@ module Vulture::Output
   def green(text); colorize(text, 32); end
   def blue(text); colorize(text, 34); end
 
-  def debug(s)
-    self.info("::#{__method__}::\s#{s}") if Vulture::DEBUG
+  def print_debug(s)
+    self.print_info("::#{__method__}::\s#{s}") if self.debug
   end
 
-  def info(s)
+  def print_verbose(s)
+    self.print_info("::#{__method__}::\s#{s}") if self.verbose
+  end
+
+
+  def print_info(s)
     print("\s#{blue('[*]')}\t#{s}\n")
     return nil
   end 
 
-  def erro(s)
+  def print_error(s)
     raise s
     rescue Exception => error
       print("\s#{red('[-]')}\t#{error.message}\n")
-      print("\s#{red('[-]')}\t#{error.backtrace.join("\n")}\n") if Vulture::DEBUG
+      print("\s#{red('[-]')}\t#{error.backtrace.join("\n")}\n") if self.debug
       exit 1
   end 
   
-  def good(s)
+  def print_good(s)
   	if (s.kind_of?(Array))
 	    s.each do |a|
-	      self.good(a)
+	      self.print_good(a)
 	    end
 	  else
       print("\s#{green('[+]')}\t#{s}")
@@ -53,7 +58,7 @@ module Vulture::Output
     msg.uniq!
 
     if (self.outfile.nil?)
-	    self.good(msg)
+	    self.print_good(msg)
 	  else
 	    writeout(self.outfile,msg)
       return nil
@@ -66,10 +71,10 @@ module Vulture::Output
 	  
     begin
       outFile = File.open(file, File::WRONLY|File::APPEND|File::CREAT) 
-      outFile.puts(good(msg))
+      outFile.puts(print_good(msg))
       outFile.close
 	  rescue Exception => e
-	    erro(e)
+	    print_error(e)
     end
   end
 

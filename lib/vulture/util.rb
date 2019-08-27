@@ -1,17 +1,22 @@
 require 'yaml'
+require 'pry'
 module Vulture::Util
   # Set all possible manipulable inputs. Meaning, try to map all user inputs
   # @param [String] in_file File path to be analized.
   # @param [String] lang The The program language of the file.
   # @return [Array, nil] Array for user's input variables.
-  def get_manipulable_inputs (in_file, lang) 
+  def get_manipulable_inputs (file_lines) 
     begin
-      source_code_fd = File.open(in_file)
-      tracker = YAML::load_file(Vulture::RootInstall+"/signatures/input_tracker.yml")[lang]
+
+      tracker = self.syntax['inputs']
       raise RuntimeError.new("unable to find input tracker for #{lang}") if tracker.nil?
-      #Msg.new().debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
+      #Msg.new().print_debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
       vars = []
-      source_code_fd.each do |line|
+      # comments = ['^\/\/','^\*','^\/\*'] # only PHP do it for other languages
+      file_lines.each do |line|
+        # comment = false
+        # comments.each {|com| comment = true if line.chomp.match(/#{com}/) }
+        # next if comment
         tracker.each do | pattern|
           line.force_encoding("ISO-8859-1").encode("UTF-8").match(%r{#{pattern}}i)
             unless ($1.nil?)
@@ -25,7 +30,7 @@ module Vulture::Util
             end
         end
       end
-    source_code_fd.close
+      # file_lines = nil
     rescue Exception, RuntimeError => e
       raise e.message
     end
@@ -50,7 +55,7 @@ module Vulture::Util
       raise  RuntimeError.new("file #{yml} not found!")
     end
     rescue Exception => e
-      # Msg.new.erro(e)
+      # Msg.new.print_errore)
       raise e.message
     end
   end
@@ -147,14 +152,14 @@ module Vulture::Util
       end
       unless (File::directory?(dir))
         raise RuntimeError.new("is not a valid directory")
-        # msg.erro(s)
+        # msg.print_errors)
         # return nil
       end
 
       ext = ".#{lang}"
       #libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
       libfiles = File.join(dir, "**", "*#{ext}")
-      # Vulture::Output.debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
+      # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
 
       files = Dir.glob(libfiles)
       if (files.nil? or files.empty?)
@@ -168,5 +173,32 @@ module Vulture::Util
     end
 
   end
+
+  # Get the line number that has a comment
+  # @param [String] lang The language to look for comments.
+  # @param [String] file The file path to look.
+  # @return [Array] List of line with comments.
+  def get_comments(file_lines)
+  
+    comments_pattern = self.syntax['comments']
+
+    comment_lines = {}
+    comment_lines[file] = []
+    is_comment = false
+    line_number = 0
+   
+    file_lines.each do |line|
+      is_comment = false
+      line_number += 1
+      comments_pattern.each do |com| 
+        is_comment = true if line.strip.match(/#{com}/) 
+      end
+      comment_lines[file] << line_number if is_comment
+    end
+
+    return comment_lines
+
+  end
+
 
 end
