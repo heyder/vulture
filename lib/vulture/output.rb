@@ -29,7 +29,6 @@ module Vulture::Output
     rescue Exception => error
       print("\s#{red('[-]')}\t#{error.message}\n")
       print("\s#{red('[-]')}\t#{error.backtrace.join("\n")}\n") if self.debug
-      exit 1
   end 
   
   def print_good(s)

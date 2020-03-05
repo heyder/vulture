@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 # -*- encoding : utf-8 -*-
-require_relative 'setup.rb'
-require 'pry'
+# require 'yaml'
+require 'optparse'
+require "bundler/setup"
+require "vulture"
 #
 options = {
   :lang => nil,
@@ -10,10 +12,6 @@ options = {
   :outfile => nil,
   :debug => false,
   :verbose => false
-  #:url => nil,
-  #:proxy_addr => "127.0.0.1",
-  #:proxy_port => 8080,
-  #:use_proxy  => true
 }
 
 OptionParser.new do |opts|
@@ -34,7 +32,7 @@ OptionParser.new do |opts|
     opts.on("-v", "--verbose", "Verbose output") do |e|
       options[:verbose] = true
     end
-    opts.on("-d", "--print_debug", "Running in print_debug mode") do |r|
+    opts.on("-d", "--debug", "Running in print_debug mode") do |r|
       options[:debug] = true
     end
     opts.parse!
@@ -53,45 +51,42 @@ def main(options)
 
   vulture = Vulture.new(options)
 
-  # binding.pry
-
-  # vulture.print_debug("::#{__method__}::MSG::Vulture#{vulture.inspect}")
   #TODO - file_path_validator
   vulture.print_info("The report file will be saved in #{vulture.outfile}") if vulture.outfile
   
-  vFiles = vulture.get_files(vulture.dir,vulture.lang)
+  files_list = vulture.get_files(vulture.dir)
 
-  vulture.print_debug("::#{__method__}::vulture::files::#{vFiles.length}")
+  vulture.print_debug("::#{__method__}::vulture::files::#{files_list.length}")
 	  
-  vFiles.each do |file|
+  files_list.each do |file|
     fd = File.readlines(file)
     inputs = vulture.get_manipulable_inputs(fd)
-    vulture.vars = vulture.vars | inputs unless inputs.nil?
+    vulture.inputs = vulture.inputs | inputs unless inputs.nil?
     fd = nil
   end
-  vulture.print_verbose("::#{__method__}::vulture::inputs::#{vulture.vars}")
+  vulture.print_verbose("::#{__method__}::vulture::inputs::#{vulture.inputs}")
   
 
   if (vulture.rot.nil?)
     # run all valide search for something wrong in the source code
     Vulture::VALID_ROTS.each do |rot|
 	    vulture.rot = rot
-      run(vFiles,vulture)
+      run(files_list,vulture)
     end
   else
-    run(vFiles,vulture)
+    run(files_list,vulture)
   end
   
 end
 #
 def run(pFiles,vulture)
   
-  vulture.patterns  = vulture.get_patterns(vulture.rot,vulture.lang) # get regex for vulnerability category
+  vulture.patterns  = vulture.get_patterns(vulture.rot) # get regex for vulnerability category
   if (vulture.rot != 'misc')
-    unless (vulture.vars.empty?)
+    unless (vulture.inputs.empty?)
       # the magic happens here
       # the jump of the cat :)
-      vulture.patterns = vulture.generate_dynamic_patterns(vulture.patterns, vulture.vars)  # anexa a os inputs manipulavei nos padros pre estabelecido
+      vulture.patterns = vulture.generate_dynamic_patterns(vulture.patterns, vulture.inputs)  # anexa a os inputs manipulavei nos padros pre estabelecido
     end 
   end
   vulture.print_debug("::#{__method__}::MSG::[@patterns]\t#{vulture.patterns.inspect}")

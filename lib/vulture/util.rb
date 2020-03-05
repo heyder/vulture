@@ -10,13 +10,13 @@ module Vulture::Util
 
       tracker = self.syntax['inputs']
       raise RuntimeError.new("unable to find input tracker for #{lang}") if tracker.nil?
-      #Msg.new().print_debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
-      vars = []
-      # comments = ['^\/\/','^\*','^\/\*'] # only PHP do it for other languages
+
+      comments = get_comments(file_lines)
+      line_number = 0
       file_lines.each do |line|
-        # comment = false
-        # comments.each {|com| comment = true if line.chomp.match(/#{com}/) }
-        # next if comment
+        line_number += 1
+        # binding.pry
+				next if comments[self.file].include?(line_number)
         tracker.each do | pattern|
           line.force_encoding("ISO-8859-1").encode("UTF-8").match(%r{#{pattern}}i)
             unless ($1.nil?)
@@ -25,7 +25,7 @@ module Vulture::Util
                 if (tmpVar.match(%r{^\$})) # remove o caracter "$" do nome da variavel para ficar generico
                   tmpVar.gsub!(%r{^\$},'').strip!
                 end
-                vars << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
+                self.inputs << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
               end
             end
         end
@@ -34,18 +34,18 @@ module Vulture::Util
     rescue Exception, RuntimeError => e
       raise e.message
     end
-    return vars.uniq unless (vars.nil? or vars.empty?)
+    return self.inputs.uniq! unless (self.inputs.nil? or self.inputs.empty?)
   end
 
   # Get rotscan pattern
   # @param [String] rot The vulnerability category.
   # @param [String] lang The program languange to analize. 
   # @return [Array] Array of Regexp that match vulnerable pattern.
-  def get_patterns(rot,lang)
+  def get_patterns(rot)
     begin
     yml = "#{Vulture::RootInstall}/signatures/#{rot}.yml"
     if (File.file?(yml))
-      pattern = YAML::load_file(yml)[lang]
+      pattern = YAML::load_file(yml)[self.lang]
       if (pattern.nil?)
         raise  "patterns were not found to #{rot}!"
       else
@@ -61,11 +61,11 @@ module Vulture::Util
   end
 
   # Anexa o nome das variaveis no pattern lido do conf/*.yml
-  # @param [Array] inPattern An array of Regexp to be match against the file
-  # @param [Array] inVars An array of variables mapped (see #get_manipulable_inputs)
+  # @param [Array] input_pattern An array of Regexp to be match against the file
+  # @param [Array] user_inputs An array of variables mapped (see #get_manipulable_inputs)
   # @return [Array]
-  def generate_dynamic_patterns(inPattern,inVars)
-    if (inPattern.nil? or inVars.nil?)
+  def generate_dynamic_patterns(input_pattern,user_inputs)
+    if (input_pattern.nil? or user_inputs.nil?)
       return nil
     end
     # função para remover o ")" do final da linha
@@ -92,29 +92,29 @@ module Vulture::Util
       end
     end
 
-    nVars = []
-    inVars.each do |var|
+    var_pattern = []
+    user_inputs.each do |var|
       var.gsub!(']','\]')
       var.gsub!(']','\]')
       var.gsub!('+','\+')
       var.gsub!(')','')
       var.gsub!('(','')
-      if (nVars.empty?)
-          nVars << "#{var}"
+      if (var_pattern.empty?)
+          var_pattern << "#{var}"
       else
-        unless (nVars.include?(var))
-          nVars << "|#{var}"
+        unless (var_pattern.include?(var))
+          var_pattern << "|#{var}"
         end
       end
     end
     
     #ret = []
-    macro_pattern, ret = inPattern.partition {|pattern| pattern.match(%r{\(.+\).*\((MARK)\)}) }
+    macro_pattern, ret = input_pattern.partition {|pattern| pattern.match(%r{\(.+\).*\((MARK)\)}) }
     macro_pattern.each do |p|
       #pattern.match(%r{.*\(.*\).*\((.*)\).+})
       # another magic
         p.match(%r{\(.+\).*\((MARK)\)}).captures
-        ret << p.gsub($1,nVars.uniq.join())
+        ret << p.gsub($1,var_pattern.uniq.join())
         pattern, replaced = splitbracket("#{pattern}")
         case (replaced)
         when 1
@@ -140,30 +140,26 @@ module Vulture::Util
   # @param [String] dir Directory of the project to be analized.
   # @patam [String] lang  The program language of the project.
   # @return [Array] List of files.
-  def get_files(dir,lang)
+  def get_files(dir)
 
     begin
       # msg = Msg.new()
-      if ((lang.nil?) or (lang.empty?) or (lang == ''))
+      if ((self.lang.nil?) or (self.lang.empty?) or (self.lang == ''))
         return nil
       elsif
         ((dir.nil?) or (dir.empty?) or (dir == ''))
         return nil
       end
-      unless (File::directory?(dir))
-        raise RuntimeError.new("is not a valid directory")
-        # msg.print_errors)
-        # return nil
-      end
+      raise RuntimeError.new("is not a valid directory") unless (File::directory?(dir))
 
-      ext = ".#{lang}"
-      #libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
-      libfiles = File.join(dir, "**", "*#{ext}")
-      # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
+      ext = ".#{self.lang}"
+      #lib_files = File.join(File.expand_path(dir), "**", "*#{ext}")
+      lib_files = File.join(dir, "**", "*#{ext}")
+      # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{lib_files.inspect}")
 
-      files = Dir.glob(libfiles)
+      files = Dir.glob(lib_files)
       if (files.nil? or files.empty?)
-        raise "no files \"#{lang}\" founds"
+        raise "no files \"#{self.lang}\" founds"
         #return nil
       else
         return files.uniq
@@ -183,9 +179,11 @@ module Vulture::Util
     comments_pattern = self.syntax['comments']
 
     comment_lines = {}
-    comment_lines[file] = []
+    comment_lines[self.file] = []
     is_comment = false
     line_number = 0
+
+    return comment_lines if comments_pattern.nil? # return empty arrray if not comment syntax defined
    
     file_lines.each do |line|
       is_comment = false
@@ -193,7 +191,7 @@ module Vulture::Util
       comments_pattern.each do |com| 
         is_comment = true if line.strip.match(/#{com}/) 
       end
-      comment_lines[file] << line_number if is_comment
+      comment_lines[self.file] << line_number if is_comment
     end
 
     return comment_lines
