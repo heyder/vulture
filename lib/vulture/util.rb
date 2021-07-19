@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'yaml'
 require 'pry'
 module Vulture::Util
@@ -5,173 +7,163 @@ module Vulture::Util
   # @param [String] in_file File path to be analized.
   # @param [String] lang The The program language of the file.
   # @return [Array, nil] Array for user's input variables.
-  def get_manipulable_inputs (file_lines) 
+  def get_manipulable_inputs(file_lines)
     begin
+      tracker = syntax['inputs']
+      raise "unable to find input tracker for #{lang}" if tracker.nil?
 
-      tracker = self.syntax['inputs']
-      raise RuntimeError.new("unable to find input tracker for #{lang}") if tracker.nil?
-      #Msg.new().print_debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
+      # Msg.new().print_debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
       vars = []
       # comments = ['^\/\/','^\*','^\/\*'] # only PHP do it for other languages
       file_lines.each do |line|
         # comment = false
         # comments.each {|com| comment = true if line.chomp.match(/#{com}/) }
         # next if comment
-        tracker.each do | pattern|
-          line.force_encoding("ISO-8859-1").encode("UTF-8").match(%r{#{pattern}}i)
-            unless ($1.nil?)
-              if ($1.length > 2) # para evitar alguns falso positivos so pegamos variaveis maiores que 2
-                tmpVar = $1
-                if (tmpVar.match(%r{^\$})) # remove o caracter "$" do nome da variavel para ficar generico
-                  tmpVar.gsub!(%r{^\$},'').strip!
-                end
-                vars << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
-              end
+        tracker.each do |pattern|
+          line.force_encoding('ISO-8859-1').encode('UTF-8').match(/#{pattern}/i)
+          if !Regexp.last_match(1).nil? && Regexp.last_match(1).length > 2 # para evitar alguns falso positivos so pegamos variaveis maiores que 2
+            tmpVar = Regexp.last_match(1)
+            if tmpVar.match(/^\$/) # remove o caracter "$" do nome da variavel para ficar generico
+              tmpVar.gsub!(/^\$/, '').strip!
             end
+            vars << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
+          end
         end
       end
       # file_lines = nil
     rescue Exception, RuntimeError => e
       raise e.message
     end
-    return vars.uniq unless (vars.nil? or vars.empty?)
+    return vars.uniq unless vars.nil? || vars.empty?
   end
 
   # Get rotscan pattern
   # @param [String] rot The vulnerability category.
-  # @param [String] lang The program languange to analize. 
+  # @param [String] lang The program languange to analize.
   # @return [Array] Array of Regexp that match vulnerable pattern.
-  def get_patterns(rot,lang)
-    begin
+  def get_patterns(rot, lang)
     yml = "#{Vulture::RootInstall}/signatures/#{rot}.yml"
-    if (File.file?(yml))
-      pattern = YAML::load_file(yml)[lang]
-      if (pattern.nil?)
-        raise  "patterns were not found to #{rot}!"
+    if File.file?(yml)
+      pattern = YAML.load_file(yml)[lang]
+      if pattern.nil?
+        raise "patterns were not found to #{rot}!"
       else
-        return pattern
+        pattern
       end
     else
-      raise  RuntimeError.new("file #{yml} not found!")
+      raise "file #{yml} not found!"
     end
-    rescue Exception => e
-      # Msg.new.print_errore)
-      raise e.message
-    end
+  rescue Exception => e
+    # Msg.new.print_errore)
+    raise e.message
   end
 
   # Anexa o nome das variaveis no pattern lido do conf/*.yml
   # @param [Array] inPattern An array of Regexp to be match against the file
-  # @param [Array] inVars An array of variables mapped (see #get_manipulable_inputs)
+  # @param [Array] in_vars An array of variables mapped (see #get_manipulable_inputs)
   # @return [Array]
-  def generate_dynamic_patterns(inPattern,inVars)
-    if (inPattern.nil? or inVars.nil?)
+  def generate_dynamic_patterns(inPattern, in_vars)
+    if inPattern.nil? || in_vars.nil?
       return nil
     end
+
     # função para remover o ")" do final da linha
     def splitbracket(s)
-      if s.match(%r{(\)\\\))$}) # match ")\)" end of line
-        ret = s.gsub(%r{(\)\\\))$},'')
+      case s
+      when /(\)\\\))$/ # match ")\)" end of line
+        ret = s.gsub(/(\)\\\))$/, '')
         replaced = 1
-        return ret, replaced
-      elsif s.match(%r{\)\\\)\?$}) # match ")\)?" end of line
-        ret = s.gsub(%r{\)\\\)\?$},'')  
+        [ret, replaced]
+      when /\)\\\)\?$/ # match ")\)?" end of line
+        ret = s.gsub(/\)\\\)\?$/, '')
         replaced = 2
-        return ret, replaced
-      elsif s.match(%r{(\\\))$}) # match '\)' end of line
-        ret = s.gsub(%r{(\\\))$},'')
+        [ret, replaced]
+      when /(\\\))$/ # match '\)' end of line
+        ret = s.gsub(/(\\\))$/, '')
         replaced = 3
-        return ret, replaced
-      elsif s.match(%r{(\))$})    # match simple ')' end of line
-        ret = s.gsub(%r{(\))$},'')
+        [ret, replaced]
+      when /(\))$/ # match simple ')' end of line
+        ret = s.gsub(/(\))$/, '')
         replaced = 4
-        return ret, replaced
+        [ret, replaced]
       else
         replaced = 0
-        return s, replaced
+        [s, replaced]
       end
     end
 
-    nVars = []
-    inVars.each do |var|
-      var.gsub!(']','\]')
-      var.gsub!(']','\]')
-      var.gsub!('+','\+')
-      var.gsub!(')','')
-      var.gsub!('(','')
-      if (nVars.empty?)
-          nVars << "#{var}"
+    n_vars = []
+    in_vars.each do |var|
+      v = var.gsub(']', '\]')
+      v = var.gsub('+', '\+')
+      v = var.gsub(')', '')
+      v = var.gsub('(', '')
+      if n_vars.empty?
+        n_vars << v.to_s
       else
-        unless (nVars.include?(var))
-          nVars << "|#{var}"
+        unless n_vars.include?(v)
+          n_vars << "|#{v}"
         end
       end
     end
-    
-    #ret = []
-    macro_pattern, ret = inPattern.partition {|pattern| pattern.match(%r{\(.+\).*\((MARK)\)}) }
+
+    # ret = []
+    macro_pattern, ret = inPattern.partition { |pattern| pattern.match(/\(.+\).*\((MARK)\)/) }
     macro_pattern.each do |p|
-      #pattern.match(%r{.*\(.*\).*\((.*)\).+})
+      # pattern.match(%r{.*\(.*\).*\((.*)\).+})
       # another magic
-        p.match(%r{\(.+\).*\((MARK)\)}).captures
-        ret << p.gsub($1,nVars.uniq.join())
-        pattern, replaced = splitbracket("#{pattern}")
-        case (replaced)
-        when 1
-          ret << "#{pattern})\\)" # add ')/)'
-        when 2
-          ret << "#{pattern})\\)?" # ')/)?'
-        when 3
-          ret << "#{pattern}\\)" # /)
-        when 4
-          ret << "#{pattern})" #)
-        else
-          ret << "#{pattern}"
-        end
+      p.match(/\(.+\).*\((MARK)\)/).captures
+      ret << p.gsub(Regexp.last_match(1), n_vars.uniq.join)
+      pattern, replaced = splitbracket(pattern.to_s)
+      ret << case replaced
+             when 1
+               "#{pattern})\\)" # add ')/)'
+             when 2
+               "#{pattern})\\)?" # ')/)?'
+             when 3
+               "#{pattern}\\)" # /)
+             when 4
+               "#{pattern})" # )
+             else
+               pattern.to_s
+             end
     end
-  
-    ret.reject! { |c| c.empty? } # cleanup
-    return ret
 
+    ret.reject!(&:empty?) # cleanup
+    ret
   end
-
 
   # Get files in a directory by extension
   # @param [String] dir Directory of the project to be analized.
   # @patam [String] lang  The program language of the project.
   # @return [Array] List of files.
-  def get_files(dir,lang)
-
-    begin
-      # msg = Msg.new()
-      if ((lang.nil?) or (lang.empty?) or (lang == ''))
-        return nil
-      elsif
-        ((dir.nil?) or (dir.empty?) or (dir == ''))
-        return nil
-      end
-      unless (File::directory?(dir))
-        raise RuntimeError.new("is not a valid directory")
-        # msg.print_errors)
-        # return nil
-      end
-
-      ext = ".#{lang}"
-      #libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
-      libfiles = File.join(dir, "**", "*#{ext}")
-      # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
-
-      files = Dir.glob(libfiles)
-      if (files.nil? or files.empty?)
-        raise "no files \"#{lang}\" founds"
-        #return nil
-      else
-        return files.uniq
-      end
-    rescue Exception => e
-      raise e.message
+  def get_files(dir, lang)
+    # msg = Msg.new()
+    if lang.nil? || lang.empty? || (lang == '')
+      return nil
+    elsif dir.nil? || dir.empty? || (dir == '')
+      return nil
+    end
+    unless File.directory?(dir)
+      raise 'is not a valid directory'
+      # msg.print_errors)
+      # return nil
     end
 
+    ext = ".#{lang}"
+    # libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
+    libfiles = File.join(dir, '**', "*#{ext}")
+    # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
+
+    files = Dir.glob(libfiles)
+    if files.nil? || files.empty?
+      raise "no files \"#{lang}\" founds"
+      # return nil
+    else
+      files.uniq
+    end
+  rescue Exception => e
+    raise e.message
   end
 
   # Get the line number that has a comment
@@ -179,26 +171,22 @@ module Vulture::Util
   # @param [String] file The file path to look.
   # @return [Array] List of line with comments.
   def get_comments(file_lines)
-  
-    comments_pattern = self.syntax['comments']
+    comments_pattern = syntax['comments']
 
     comment_lines = {}
     comment_lines[file] = []
     is_comment = false
     line_number = 0
-   
+
     file_lines.each do |line|
       is_comment = false
       line_number += 1
-      comments_pattern.each do |com| 
-        is_comment = true if line.strip.match(/#{com}/) 
+      comments_pattern.each do |com|
+        is_comment = true if line.strip.match(/#{com}/)
       end
       comment_lines[file] << line_number if is_comment
     end
 
-    return comment_lines
-
+    comment_lines
   end
-
-
 end

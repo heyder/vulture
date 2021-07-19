@@ -1,5 +1,6 @@
 AllCops:
   TargetRubyVersion: 2.5
+  NewCops: enable
 
 Layout/ClosingParenthesisIndentation:
   Enabled: false
@@ -56,9 +57,9 @@ Metrics/AbcSize:
 Metrics/BlockLength:
   Enabled: false
 
-Metrics/LineLength:
-  Max: 100
-  IgnoredPatterns: ['^\s+?#']
+# Metrics/LineLength:
+#   Max: 100
+#   IgnoredPatterns: ['^\s+?#']
 
 Metrics/MethodLength:
   Max: 20
