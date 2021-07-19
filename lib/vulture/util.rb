@@ -12,13 +12,13 @@ module Vulture::Util
       tracker = syntax['inputs']
       raise "unable to find input tracker for #{lang}" if tracker.nil?
 
-      # Msg.new().print_debug("::#{__method__}::MSG::[tracker]\s#{tracker.inspect}")
-      vars = []
-      # comments = ['^\/\/','^\*','^\/\*'] # only PHP do it for other languages
+      comments = get_comments(file_lines)
+      line_number = 0
       file_lines.each do |line|
-        # comment = false
-        # comments.each {|com| comment = true if line.chomp.match(/#{com}/) }
-        # next if comment
+        line_number += 1
+        # binding.pry
+        next if comments[file].include?(line_number)
+
         tracker.each do |pattern|
           line.force_encoding('ISO-8859-1').encode('UTF-8').match(/#{pattern}/i)
           if !Regexp.last_match(1).nil? && Regexp.last_match(1).length > 2 # para evitar alguns falso positivos so pegamos variaveis maiores que 2
@@ -26,7 +26,7 @@ module Vulture::Util
             if tmpVar.match(/^\$/) # remove o caracter "$" do nome da variavel para ficar generico
               tmpVar.gsub!(/^\$/, '').strip!
             end
-            vars << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
+            inputs << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
           end
         end
       end
@@ -34,14 +34,13 @@ module Vulture::Util
     rescue Exception, RuntimeError => e
       raise e.message
     end
-    return vars.uniq unless vars.nil? || vars.empty?
+    return inputs.uniq! unless inputs.nil? || inputs.empty?
   end
 
   # Get rotscan pattern
   # @param [String] rot The vulnerability category.
-  # @param [String] lang The program languange to analize.
   # @return [Array] Array of Regexp that match vulnerable pattern.
-  def get_patterns(rot, lang)
+  def get_patterns(rot)
     yml = "#{Vulture::RootInstall}/signatures/#{rot}.yml"
     if File.file?(yml)
       pattern = YAML.load_file(yml)[lang]
@@ -53,19 +52,16 @@ module Vulture::Util
     else
       raise "file #{yml} not found!"
     end
-  rescue Exception => e
-    # Msg.new.print_errore)
+  rescue RuntimeError => e
     raise e.message
   end
 
   # Anexa o nome das variaveis no pattern lido do conf/*.yml
-  # @param [Array] inPattern An array of Regexp to be match against the file
-  # @param [Array] in_vars An array of variables mapped (see #get_manipulable_inputs)
+  # @param [Array] input_pattern An array of Regexp to be match against the file
+  # @param [Array] user_inputs An array of variables mapped (see #get_manipulable_inputs)
   # @return [Array]
-  def generate_dynamic_patterns(inPattern, in_vars)
-    if inPattern.nil? || in_vars.nil?
-      return nil
-    end
+  def generate_dynamic_patterns(input_pattern, user_inputs)
+    return nil if input_pattern.nil? || user_inputs.nil?
 
     # função para remover o ")" do final da linha
     def splitbracket(s)
@@ -92,28 +88,28 @@ module Vulture::Util
       end
     end
 
-    n_vars = []
-    in_vars.each do |var|
+    var_pattern = []
+    user_inputs.each do |var|
       v = var.gsub(']', '\]')
       v = var.gsub('+', '\+')
       v = var.gsub(')', '')
       v = var.gsub('(', '')
-      if n_vars.empty?
-        n_vars << v.to_s
+      if var_pattern.empty?
+        var_pattern << v.to_s
       else
-        unless n_vars.include?(v)
-          n_vars << "|#{v}"
+        unless var_pattern.include?(v)
+          var_pattern << "|#{v}"
         end
       end
     end
 
     # ret = []
-    macro_pattern, ret = inPattern.partition { |pattern| pattern.match(/\(.+\).*\((MARK)\)/) }
+    macro_pattern, ret = input_pattern.partition { |pattern| pattern.match(/\(.+\).*\((MARK)\)/) }
     macro_pattern.each do |p|
       # pattern.match(%r{.*\(.*\).*\((.*)\).+})
       # another magic
       p.match(/\(.+\).*\((MARK)\)/).captures
-      ret << p.gsub(Regexp.last_match(1), n_vars.uniq.join)
+      ret << p.gsub(Regexp.last_match(1), var_pattern.uniq.join)
       pattern, replaced = splitbracket(pattern.to_s)
       ret << case replaced
              when 1
@@ -137,25 +133,21 @@ module Vulture::Util
   # @param [String] dir Directory of the project to be analized.
   # @patam [String] lang  The program language of the project.
   # @return [Array] List of files.
-  def get_files(dir, lang)
+  def get_files(dir)
     # msg = Msg.new()
     if lang.nil? || lang.empty? || (lang == '')
       return nil
     elsif dir.nil? || dir.empty? || (dir == '')
       return nil
     end
-    unless File.directory?(dir)
-      raise 'is not a valid directory'
-      # msg.print_errors)
-      # return nil
-    end
+    raise 'is not a valid directory' unless File.directory?(dir)
 
     ext = ".#{lang}"
-    # libfiles = File.join(File.expand_path(dir), "**", "*#{ext}")
-    libfiles = File.join(dir, '**', "*#{ext}")
-    # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{libfiles.inspect}")
+    # lib_files = File.join(File.expand_path(dir), "**", "*#{ext}")
+    lib_files = File.join(dir, '**', "*#{ext}")
+    # Vulture::Output.print_debug("::#{__method__}::MSG::Obj::#{lib_files.inspect}")
 
-    files = Dir.glob(libfiles)
+    files = Dir.glob(lib_files)
     if files.nil? || files.empty?
       raise "no files \"#{lang}\" founds"
       # return nil
@@ -177,6 +169,8 @@ module Vulture::Util
     comment_lines[file] = []
     is_comment = false
     line_number = 0
+
+    return comment_lines if comments_pattern.nil? # return empty arrray if not comment syntax defined
 
     file_lines.each do |line|
       is_comment = false

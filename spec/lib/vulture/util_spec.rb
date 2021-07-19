@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'spec_helper'
+require_relative '../../spec_helper'
 
 describe Vulture::Util do
   before(:context) do
@@ -28,13 +28,13 @@ describe Vulture::Util do
 
   context '.get_patterns' do
     it 'invalid category' do
-      expect { @vulture.get_patterns('invalid', 'php') }.to raise_error(RuntimeError)
+      expect { @vulture.get_patterns('invalid') }.to raise_error(RuntimeError)
     end
-    it 'invalid language' do
-      expect { @vulture.get_patterns('rce', 'noexist') }.to raise_error(RuntimeError)
-    end
+    # it 'invalid language' do
+    #     expect{@vulture.get_patterns('rce')}.to raise_error(RuntimeError)
+    # end
     it 'all is good' do
-      patterns = @vulture.get_patterns('rce', 'php')
+      patterns = @vulture.get_patterns('rce')
       expect(patterns).not_to be(nil)
       expect(patterns).to be_an_instance_of(Array)
     end
@@ -42,14 +42,15 @@ describe Vulture::Util do
 
   context '.generate_dynamic_patterns' do
     it 'all good' do
-      patterns = @vulture.get_patterns('rce', 'php')
+      patterns = @vulture.get_patterns('rce')
       file = "#{Vulture::RootInstall}/../examples/files_test/cmd.php"
       vars = @vulture.get_manipulable_inputs(File.readlines(file))
 
-      regexs = @vulture.generate_dynamic_patterns(patterns, vars)
+      result = @vulture.generate_dynamic_patterns(patterns, vars)
 
-      expect(regexs).not_to be(nil)
-      expect(regexs).not_to be_empty
+      expect(result).not_to be(nil)
+      expect(result).to be_instance_of(Array)
+      expect(result).not_to be_empty
     end
   end
 end

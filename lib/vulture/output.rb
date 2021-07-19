@@ -36,7 +36,6 @@ module Vulture::Output
   rescue Exception => e
     print("\s#{red('[-]')}\t#{e.message}\n")
     print("\s#{red('[-]')}\t#{e.backtrace.join("\n")}\n") if debug
-    exit 1
   end
 
   def print_good(s)
