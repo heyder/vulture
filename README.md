@@ -1,6 +1,6 @@
 # Vulture
 
-Static source code analysis tool using regular expression signatures.
+Static Application Security Testing (SAST) tool using regular expression signatures.
 
 ## Installation
 
