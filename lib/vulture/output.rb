@@ -33,7 +33,7 @@ module Vulture::Output
 
   def print_error(s)
     raise s
-  rescue Exception => e
+  rescue RuntimeError => e
     print("\s#{red('[-]')}\t#{e.message}\n")
     print("\s#{red('[-]')}\t#{e.backtrace.join("\n")}\n") if debug
   end
@@ -76,7 +76,7 @@ module Vulture::Output
     outFile = File.open(file, File::WRONLY | File::APPEND | File::CREAT)
     outFile.puts(print_good(msg))
     outFile.close
-  rescue Exception => e
+  rescue RuntimeError => e
     print_error(e)
   end
 end
