@@ -47,6 +47,7 @@ class Vulture
 
       patterns.each do |pattern|
         ret = line.force_encoding('ISO-8859-1').encode('UTF-8').match(/#{pattern}/)
+        # binding.pry if $1
         # ret = line.force_encoding("ISO-8859-1").encode("UTF-8").match(%r{#{pattern}}i)
         unless ret.nil?
           print_debug("::vulture::#{__method__}::[FOUND]\t#{ret.captures.to_a}")
@@ -65,7 +66,7 @@ class Vulture
     # 	return founds
     # end
     return founds unless founds.empty?
-  rescue Exception => e
+  rescue Exception, RuntimeError => e
     print_error(e)
   end
 end

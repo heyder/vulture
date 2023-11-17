@@ -63,31 +63,35 @@ end
 puts options.inspect
 
 def main(options)
-  vulture = Vulture.new(options)
+  begin
+    vulture = Vulture.new(options)
 
-  # TODO: - file_path_validator
-  vulture.print_info("The report file will be saved in #{vulture.outfile}") if vulture.outfile
+    # TODO: - file_path_validator
+    vulture.print_info("The report file will be saved in #{vulture.outfile}") if vulture.outfile
 
-  files_list = vulture.get_files(vulture.dir)
+    files_list = vulture.get_files(vulture.dir)
 
-  vulture.print_debug("::#{__method__}::vulture::files::#{files_list.length}")
+    vulture.print_debug("::#{__method__}::vulture::files::#{files_list.length}")
 
-  files_list.each do |file|
-    fd = File.readlines(file)
-    inputs = vulture.get_manipulable_inputs(fd)
-    vulture.inputs = vulture.inputs | inputs unless inputs.nil?
-    fd = nil
-  end
-  vulture.print_verbose("::#{__method__}::vulture::inputs::#{vulture.inputs}")
+    files_list.each do |file|
+      fd = File.readlines(file)
+      inputs = vulture.get_manipulable_inputs(fd)
+      vulture.inputs = vulture.inputs | inputs unless inputs.nil?
+      fd = nil
+    end
+    vulture.print_verbose("::#{__method__}::vulture::inputs::#{vulture.inputs}")
 
-  if vulture.rot.nil?
-    # run all valide search for something wrong in the source code
-    Vulture::VALID_ROTS.each do |rot|
-      vulture.rot = rot
+    if vulture.rot.nil?
+      # run all valide search for something wrong in the source code
+      Vulture::VALID_ROTS.each do |rot|
+        vulture.rot = rot
+        run(files_list, vulture)
+      end
+    else
       run(files_list, vulture)
     end
-  else
-    run(files_list, vulture)
+  rescue RuntimeError => e
+    vulture.print_error(e.message)
   end
 end
 

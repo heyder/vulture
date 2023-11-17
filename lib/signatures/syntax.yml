@@ -1,24 +1,32 @@
 php:
   inputs:
-    - '(\$\w+)\s?=\s?(\$_POST\[?.*?\]?|\$_GET\[?.*?\]?|\$_REQUEST\[?.*?\]?)'
-    - '(\$\w+)\s?=\s?isset\(\s(\$_POST\[?.*?\]?|\$_GET\[?.*?\]?|\$_REQUEST\[?.*?\]?)\s?\)\s?\?\s?.*:.*' # ternary operator attribution
-    - '\$_POST\[?.?(\w+)?.?\]'
-    - '\$_GET\[?.?(\w+)?.?\]'
-    - '\$_REQUEST\[?.?(\w+)?.?\]'
-    - 'getStringParam\(?.?(\w+)?.?\)'
-    - 'getRawValue\(?.?(\w+)?.?\)'
-    - '\$(\w+)\s+?=\s+?\$this'
-    - '\$(\w+)\s?=\s?.+\$_GET\[?.+\]?'
-    - '\$(\w+)\s?=\s?.+\$_POST\[?.+\]?'
-    - '\$(\w+)\s?=\s?.+\$_REQUEST\[?.+\]?'
-    - '\$(\w+)\s?=\s?\$\w+\s?->\s?get\(.+\)'
-    - 'foreach\(\$_POST\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
-    - 'foreach\(\$_GET\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
-    - 'foreach\(\$_REQUEST\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
+    static:
+      - '(\$\w+)\s?=\s?(\$_POST\[?.*?\]?|\$_GET\[?.*?\]?|\$_REQUEST\[?.*?\]?)'
+      - '(\$\w+)\s?=\s?isset\(\s(\$_POST\[?.*?\]?|\$_GET\[?.*?\]?|\$_REQUEST\[?.*?\]?)\s?\)\s?\?\s?.*:.*' # ternary operator attribution
+      - '\$_POST\[?.?(\w+)?.?\]'
+      - '\$_GET\[?.?(\w+)?.?\]'
+      - '\$_REQUEST\[?.?(\w+)?.?\]'
+      - 'getStringParam\(?.?(\w+)?.?\)'
+      - 'getRawValue\(?.?(\w+)?.?\)'
+      - '\$(\w+)\s+?=\s+?\$this'
+      - '\$(\w+)\s?=\s?.+\$_GET\[?.+\]?'
+      - '\$(\w+)\s?=\s?.+\$_POST\[?.+\]?'
+      - '\$(\w+)\s?=\s?.+\$_REQUEST\[?.+\]?'
+      - '\$(\w+)\s?=\s?\$\w+\s?->\s?get\(.+\)'
+      - 'foreach\(\$_POST\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
+      - 'foreach\(\$_GET\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
+      - 'foreach\(\$_REQUEST\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
+      - 'foreach\s?\(.+\$_COOKIE\[?.*?\]?\s+?as\s+?\$(\w+).*\)'
+      - 'foreach\s?.+\$_COOKIE\[?.*?\]?\s+?as\s+?\$.+\s?\=\>\s?(.+)\s?\)'
+    dynamic:
+      - '\$(\w+)\s?\.=\s?.+?\b(MARK)\b.+?'
+      - '\$(\w+)\s?=\s?preg_replace\(.+(MARK)\)'
   comments:
     - '^\/\/'
     - '^\*'
     - '^\/\*'
+    - '^<\?php'
+    - '^\?>$'
 jsp:
   inputs:
     - '(\w+)\s?=(Runtime\.getRuntime\(\);)' # varible to command execution

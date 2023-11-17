@@ -9,32 +9,48 @@ module Vulture::Util
   # @return [Array, nil] Array for user's input variables.
   def get_manipulable_inputs(file_lines)
     begin
-      tracker = syntax['inputs']
-      raise "unable to find input tracker for #{lang}" if tracker.nil?
+      # binding.pry
+      user_input_pattern = syntax['inputs']['static']
+      raise "unable to find input user_input_pattern for #{lang}" if syntax['inputs']['static'].nil?
 
+      # inputs = []
       comments = get_comments(file_lines)
-      line_number = 0
-      file_lines.each do |line|
-        line_number += 1
-        # binding.pry
-        next if comments[file].include?(line_number)
+      def get_inputs(file_lines, user_input_pattern, comments)
+        line_number = 0
+        file_lines.each do |line|
+          line_number += 1
 
-        tracker.each do |pattern|
-          line.force_encoding('ISO-8859-1').encode('UTF-8').match(/#{pattern}/i)
-          if !Regexp.last_match(1).nil? && Regexp.last_match(1).length > 2 # para evitar alguns falso positivos so pegamos variaveis maiores que 2
-            tmpVar = Regexp.last_match(1)
-            if tmpVar.match(/^\$/) # remove o caracter "$" do nome da variavel para ficar generico
-              tmpVar.gsub!(/^\$/, '').strip!
+          next if comments[file].include?(line_number) || line.match("^\n$")
+
+          user_input_pattern.each do |pattern|
+            # binding.pry
+            line.force_encoding('ISO-8859-1').encode('UTF-8').match(/#{pattern}/i)
+            if !Regexp.last_match(1).nil? && Regexp.last_match(1).length > 2 # para evitar alguns falso positivos so pegamos variaveis maiores que 2
+              tmpVar = Regexp.last_match(1)
+              # if tmpVar.match(/^\$/) # remove o caracter "$" do nome da variavel para ficar generico
+              tmpVar.gsub!(/^\$/, '').strip! if tmpVar&.match(/^\$/)
+              # end
+              inputs << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
             end
-            inputs << "\\$?#{tmpVar}" # adiciona novamente o "$" entretanto agora ele eh opcional
           end
         end
+        return inputs.uniq
       end
+      inputs = get_inputs(file_lines, syntax['inputs']['static'], comments)
+      # generate dynamic pattern for manipulable inputs
+      # 
+      user_input_pattern2 = generate_dynamic_patterns(syntax['inputs']['dynamic'], inputs.uniq)
+      puts user_input_pattern2
+      inputs = (inputs + get_inputs(file_lines, user_input_pattern2, comments)).uniq
+
+      user_input_pattern3 = generate_dynamic_patterns(syntax['inputs']['dynamic'], inputs.uniq)
+      inputs = (inputs + get_inputs(file_lines, user_input_pattern3, comments)).uniq
       # file_lines = nil
+      raise RuntimeError.new('Unable to find manipulable input') if inputs.nil? || inputs.empty?
     rescue Exception, RuntimeError => e
       raise e.message
     end
-    return inputs.uniq! unless inputs.nil? || inputs.empty?
+    return inputs.uniq!
   end
 
   # Get rotscan pattern
